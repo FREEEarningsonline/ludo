@@ -23,8 +23,8 @@ const db = firebase.database();
 window.currentUser = null;
 window.userWalletBalance = 0;
 window.userName = 'Guest';
-window.GAME_BET_AMOUNT = 10; // PKR
-window.GAME_WIN_REWARD = 20; // PKR
+window.GAME_BET_AMOUNT = 25; // PKR
+window.GAME_WIN_REWARD = 1000; // PKR
 window.isBetGame = false;
 let gameTurnCount = 0; // Track total turns for initial CPU 6s
 
@@ -487,18 +487,14 @@ async function rollDice(colorClick) {
               val = 6; // Force 6
           }
       }
-
-      // Rig 5: CPU Boost - If CPU is about to get 3 consecutive sixes, force it to roll a non-6
-      if (state.consecutiveSixes === 2 && val === 6) { // If it's the 3rd 6
-          val = Math.floor(Math.random() * 5) + 1; // Force a non-6
-      }
-      // Rig 6: CPU Boost - High chance for 6 if trying to bring out more tokens
+      
+      // Rig 5: CPU Boost - High chance for 6 if trying to bring out more tokens (if not already set to 6 by Rig 4)
       let tokensInBase = state.tokens[currColor].filter(p => p === -1).length;
-      if (tokensInBase > 0 && Math.random() < 0.5) { // 50% chance for 6 if tokens in base
+      if (val !== 6 && tokensInBase > 0 && Math.random() < 0.5) { // 50% chance for 6
           val = 6;
       }
       
-      // Rig 7: CPU Boost - High chance to get exact roll to enter home
+      // Rig 6: CPU Boost - High chance to get exact roll to enter home
       let allTokens = state.tokens[currColor];
       for (let i = 0; i < allTokens.length; i++) {
           let pos = allTokens[i];
@@ -506,9 +502,14 @@ async function rollDice(colorClick) {
               let needed = 56 - pos;
               if (needed > 0 && needed <= 6 && Math.random() < 0.8) { // 80% chance for exact roll
                   val = needed;
-                  break; // Found a token to move to finish
+                  break; 
               }
           }
+      }
+
+      // Rig 7 (FINAL CHECK for CPU): Ensure CPU never rolls 3 consecutive 6s
+      if (state.consecutiveSixes === 2 && val === 6) { // If it's the 3rd 6
+          val = Math.floor(Math.random() * 5) + 1; // Force a non-6 (1-5)
       }
   }
   // ==========================================
